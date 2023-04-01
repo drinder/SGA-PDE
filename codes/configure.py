@@ -107,9 +107,9 @@ if problem == 'Kdv':
 
 # chafee-infante   u_t=u_xx-u+u**3
 if problem == 'chafee-infante': # 301*200的新数据
-    u = np.load("./data/chafee_infante_CI.npy")
-    x = np.load("./data/chafee_infante_x.npy")
-    t = np.load("./data/chafee_infante_t.npy") 
+    u = np.load("../data/chafee_infante_CI.npy")
+    x = np.load("../data/chafee_infante_x.npy")
+    t = np.load("../data/chafee_infante_t.npy") 
     # right_side = 'right_side = uxx-u+u**3'
     # right_side = 'right_side = 1.0002*uxx - 1.0008*u + 1.0004*u**3'
     right_side = 'right_side = - 1.0008*u + 1.0004*u**3'
