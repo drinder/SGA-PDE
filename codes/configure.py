@@ -33,6 +33,7 @@ aic_ratio = 1  # lower this ratio, less important is the number of elements to A
 
 print(path)
 print('fine_ratio = ',fine_ratio)
+
 ###########################################################################################
 class Net(nn.Module):
     def __init__(self,n_feature,n_hidden,n_output):
@@ -53,9 +54,10 @@ def divide(up, down, eta=1e-10):
     while np.any(down == 0):
         down += eta
     return up/down
+
 # PDE-1: Ut= -Ux/x + 0.25Uxx
 if problem == 'PDE_divide':
-    u=np.load("./data/PDE_divide.npy").T
+    u=np.load("../data/PDE_divide.npy").T
     nx = 100
     nt = 251
     x=np.linspace(1,2,nx)
@@ -68,7 +70,7 @@ if problem == 'PDE_divide':
 
 # PDE-3: Ut= d(uux)(x)
 if problem == 'PDE_compound':
-    u=np.load("./data/PDE_compound.npy").T
+    u=np.load("../data/PDE_compound.npy").T
     nx = 100
     nt = 251
     x=np.linspace(1,2,nx)
@@ -82,7 +84,7 @@ if problem == 'PDE_compound':
     
 # Burgers -u*ux+0.1*uxx
 if problem == 'Burgers':
-    data = scio.loadmat('./data/burgers.mat')
+    data = scio.loadmat('../data/burgers.mat')
     u=data.get("usol")
     x=np.squeeze(data.get("x"))
     t=np.squeeze(data.get("t").reshape(1,201))
@@ -94,7 +96,7 @@ if problem == 'Burgers':
 
 # # Kdv -0.0025uxxx-uux
 if problem == 'Kdv':
-    data = scio.loadmat('./data/Kdv.mat')
+    data = scio.loadmat('../data/Kdv.mat')
     u=data.get("uu")
     x=np.squeeze(data.get("x"))
     t=np.squeeze(data.get("tt").reshape(1,201))
