@@ -67,8 +67,8 @@ class Tree:
                     continue
                 for j in range(parent.child_num):
                     # rule 1
-                    if parent.name in {'d', 'd^2'} and j == 1: # j == 0 为d的左侧节点，j == 1为d的右侧节点
-                        node = den[np.random.randint(0, len(den))] # 随机产生一个微分运算的denominator，一般是xyt
+                    if parent.name in {'d', 'd^2'} and j == 1: 
+                        node = DENOMINATOR[np.random.randint(0, len(DENOMINATOR))] 
                         node = Node(depth=depth, idx=len(self.tree[depth]), parent_idx=parent_idx, name=node[0],
                                     var=node[2], full=node, child_num=int(node[1]), child_st=None)
                         self.tree[depth].append(node)
@@ -126,7 +126,7 @@ class Tree:
                     # print('mutate!')
                     if num_child == 0: # 叶子节点
                         node = VARS[np.random.randint(0, len(VARS))] # rule 2: 叶节点必须是var，不能是op
-                        while node[0] == temp or (parent.name in {'d', 'd^2'} and node[0] not in den[:, 0]):# rule 3: 如果编译前后结果重复，或者d的节点不在den中（即出现不能求导的对象），则重新抽取
+                        while node[0] == temp or (parent.name in {'d', 'd^2'} and node[0] not in DENOMINATOR[:, 0]):# rule 3: 如果编译前后结果重复，或者d的节点不在den中（即出现不能求导的对象），则重新抽取
                             if simple_mode and parent.name in {'d', 'd^2'} and node[0] == 'x': # simple_mode中，遇到对于x的导数，直接停止变异
                                 break                            
                             node = VARS[np.random.randint(0, len(VARS))] # 重新抽取一个vars
@@ -141,7 +141,7 @@ class Tree:
                         elif num_child == 2:
                             node = OP2[np.random.randint(0, len(OP2))]
                             right = self.tree[depth + 1][current.child_st + 1].name
-                            while node[0] == temp or (node[0] in {'d', 'd^2'} and right not in den[:, 0]):# rule 4: 避免重复，避免生成d以打乱树结构（新d的右子节点不是x）
+                            while node[0] == temp or (node[0] in {'d', 'd^2'} and right not in DENOMINATOR[:, 0]):# rule 4: 避免重复，避免生成d以打乱树结构（新d的右子节点不是x）
                                 node = OP2[np.random.randint(0, len(OP2))]
                         else:
                             raise NotImplementedError("Error occurs!")
