@@ -42,14 +42,7 @@ class Tree:
         p_var: probability of a node being a variable/operand
                (as opposed to an operator)
     """
-    
-    def add_root_node(self):
         
-        root = ROOT[np.random.randint(0, len(ROOT))] # e.g. ['sin', 1, np.sin], ['*', 2, np.multiply] 
-        node = Node(depth = 0, idx = 0, parent_idx = None, name = root[0], var = root[2], full = root,
-                    child_num = int(root[1]), child_st = 0)
-        self.tree[0].append(node)
-    
     def __init__(self, max_depth, p_var):
         
         self.max_depth = max_depth
@@ -99,47 +92,53 @@ class Tree:
         model_tree = copy.deepcopy(self.tree)
         self.inorder = tree2str_merge(model_tree)
 
-
+    def add_root_node(self):
+            
+        root = ROOT[np.random.randint(0, len(ROOT))] # e.g. ['sin', 1, np.sin], ['*', 2, np.multiply] 
+        node = Node(depth = 0, idx = 0, parent_idx = None, name = root[0], var = root[2], full = root,
+                    child_num = int(root[1]), child_st = 0)
+        self.tree[0].append(node)
+            
     def mutate(self, p_mute): 
         global see_tree
         see_tree = copy.deepcopy(self.tree)
         depth = 1
         while depth < self.max_depth:
             next_cnt = 0
-            idx_this_depth = 0  # 这个深度第几个节点
+            idx_this_depth = 0  
             for parent_idx in range(len(self.tree[depth - 1])):
                 parent = self.tree[depth - 1][parent_idx]
                 if parent.child_num == 0:
                     continue
                 for j in range(parent.child_num):  # parent 的第j个子节点
                     not_mute = np.random.choice([True, False], p=([1 - p_mute, p_mute]))
-                    # rule 1: 不突变则跳过
+                    # rule 1: 
                     if not_mute:
                         next_cnt += self.tree[depth][parent.child_st + j].child_num
                         continue
-                    # 当前节点的类型
+                    
                     current = self.tree[depth][parent.child_st + j]
                     temp = self.tree[depth][parent.child_st + j].name
-                    num_child = self.tree[depth][parent.child_st + j].child_num  # 当前变异节点的子节点数
+                    num_child = self.tree[depth][parent.child_st + j].child_num  
                     # print('mutate!')
-                    if num_child == 0: # 叶子节点
-                        node = VARS[np.random.randint(0, len(VARS))] # rule 2: 叶节点必须是var，不能是op
-                        while node[0] == temp or (parent.name in {'d', 'd^2'} and node[0] not in DENOM[:, 0]):# rule 3: 如果编译前后结果重复，或者d的节点不在den中（即出现不能求导的对象），则重新抽取
-                            if simple_mode and parent.name in {'d', 'd^2'} and node[0] == 'x': # simple_mode中，遇到对于x的导数，直接停止变异
+                    if num_child == 0: 
+                        node = VARS[np.random.randint(0, len(VARS))] # rule 2: 
+                        while node[0] == temp or (parent.name in ['d', 'd^2'] and node[0] not in DENOM[:, 0]): # rule 3: 
+                            if simple_mode and parent.name in ['d', 'd^2'] and node[0] == 'x': # simple_mode中
                                 break                            
-                            node = VARS[np.random.randint(0, len(VARS))] # 重新抽取一个vars
+                            node = VARS[np.random.randint(0, len(VARS))] 
                         new_node = Node(depth=depth, idx=idx_this_depth, parent_idx=parent_idx, name=node[0],
                                     var=node[2], full=node, child_num=int(node[1]), child_st=None)
-                        self.tree[depth][parent.child_st + j] = new_node #替换成变异的节点
-                    else: # 非叶子节点
+                        self.tree[depth][parent.child_st + j] = new_node 
+                    else: 
                         if num_child == 1:
                             node = OP1[np.random.randint(0, len(OP1))]
-                            while node[0] == temp:  # 避免重复
+                            while node[0] == temp:  
                                 node = OP1[np.random.randint(0, len(OP1))]
                         elif num_child == 2:
                             node = OP2[np.random.randint(0, len(OP2))]
                             right = self.tree[depth + 1][current.child_st + 1].name
-                            while node[0] == temp or (node[0] in {'d', 'd^2'} and right not in DENOM[:, 0]):# rule 4: 避免重复，避免生成d以打乱树结构（新d的右子节点不是x）
+                            while node[0] == temp or (node[0] in ['d', 'd^2'] and right not in DENOM[:, 0]): # rule 4
                                 node = OP2[np.random.randint(0, len(OP2))]
                         else:
                             raise NotImplementedError("Error occurs!")
