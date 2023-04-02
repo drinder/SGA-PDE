@@ -1,6 +1,6 @@
 from setup import *
 import copy
-
+import numpy as np
 
 class Node:
     """
@@ -35,40 +35,51 @@ class Node:
         self.status = self.child_num
 
 
-class Tree: #对应于pde中的一个term
+class Tree: 
+    
+    """
+    max_depth: maximum depth of the tree
+    p_var: probability of a node being a variable/operand
+           (as opposed to an operator)
+    """
+    
+    def generate_root(self):
+        
+        root = ROOT[np.random.randint(0, len(ROOT))] # e.g. ['sin', 1, np.sin], ['*', 2, np.multiply] 
+        node = Node(depth = 0, idx = 0, parent_idx = None, name = root[0], var = root[2], full = root,
+                    child_num = int(root[1]), child_st = 0)
+        self.tree[0].append(node)
+    
     def __init__(self, max_depth, p_var):
+        
         self.max_depth = max_depth
         self.tree = [[] for i in range(max_depth)]
-        self.preorder, self.inorder = None, None
+        self.preorder = None
+        self.inorder = None
 
-        root = ROOT[np.random.randint(0, len(ROOT))] # 随机产生初始root（一种OPS）# e.g. ['sin', 1, np.sin], ['*', 2, np.multiply] 
-        node = Node(depth=0, idx=0, parent_idx=None, name=root[0], var=root[2], full=root,
-                    child_num=int(root[1]), child_st=0) # 设置初始节点Node
-        self.tree[0].append(node) # 初始节点
-
-        depth = 1
-        while depth < max_depth:
-            next_cnt = 0 #child_st=next_cnt， child_st: 下一层从第几个节点开始是当前的孩子节点
-            # 对应每一个父节点都要继续生成他们的子节点
-            for parent_idx in range(len(self.tree[depth - 1])): #一个tree中某个depth处的node的子节点可以是多个，因此有可能在某个深度处存在多个node
-                parent = self.tree[depth - 1][parent_idx] # 提取出对应深度处的对应操作符（某个node）
-                if parent.child_num == 0: # 如果当前node没有子节点，则跳过当前循环的剩余语句，然后继续进行下一轮循环
+        self.generate_root()
+    
+        for depth in range(1,max_depth):
+            next_cnt = 0 
+            for parent_idx in range(len(self.tree[depth - 1])): 
+                parent = self.tree[depth - 1][parent_idx] 
+                if parent.child_num == 0: 
                     continue
                 for j in range(parent.child_num):
-                    # rule 1: parent var为d 且j为1时，必须确保右子节点为x
+                    # rule 1
                     if parent.name in {'d', 'd^2'} and j == 1: # j == 0 为d的左侧节点，j == 1为d的右侧节点
                         node = den[np.random.randint(0, len(den))] # 随机产生一个微分运算的denominator，一般是xyt
                         node = Node(depth=depth, idx=len(self.tree[depth]), parent_idx=parent_idx, name=node[0],
                                     var=node[2], full=node, child_num=int(node[1]), child_st=None)
                         self.tree[depth].append(node)
-                    # rule 2: 最底一层必须是var，不能是op
+                    # rule 2
                     elif depth == max_depth - 1:
                         node = VARS[np.random.randint(0, len(VARS))]
                         node = Node(depth=depth, idx=len(self.tree[depth]), parent_idx=parent_idx, name=node[0],
                                     var=node[2], full=node, child_num=int(node[1]), child_st=None)
                         self.tree[depth].append(node)
                     else:
-                    # rule 3: 不是最底一层，p_var概率产生var，如果产生var，则child_st为None。当产生的是ops的时候，产生对应node时对应的child_st会通过计算获得。以便对应于下一层中该ops对应的子节点。
+                    # rule 3
                         if np.random.random() <= p_var:
                             node = VARS[np.random.randint(0, len(VARS))]
                             node = Node(depth=depth, idx=len(self.tree[depth]), parent_idx=parent_idx, name=node[0],
@@ -80,7 +91,6 @@ class Tree: #对应于pde中的一个term
                                         var=node[2], full=node, child_num=int(node[1]), child_st=next_cnt)
                             next_cnt += node.child_num
                             self.tree[depth].append(node)
-            depth += 1
 
         ret = []
         dfs(ret, self.tree, depth=0, idx=0)
