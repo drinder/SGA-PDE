@@ -3,6 +3,22 @@ from setup import OPS, OP1, OP2, VARS, DENOM, ROOT, simple_mode
 import copy
 import numpy as np
 
+
+def tree2str_merge(a_tree):
+    for i in range(len(a_tree) - 1, 0, -1):
+        for node in a_tree[i]:
+            if node.status == 0:
+                if a_tree[node.depth-1][node.parent_idx].status == 1:
+                    if a_tree[node.depth-1][node.parent_idx].child_num == 2:
+                        a_tree[node.depth-1][node.parent_idx].name = a_tree[node.depth-1][node.parent_idx].name + ' ' + node.name + ')'
+                    else:
+                        a_tree[node.depth-1][node.parent_idx].name = '( ' + a_tree[node.depth-1][node.parent_idx].name + ' ' + node.name + ')'
+                elif a_tree[node.depth-1][node.parent_idx].status > 1:
+                    a_tree[node.depth-1][node.parent_idx].name = '(' + node.name + ' ' + a_tree[node.depth-1][node.parent_idx].name
+                a_tree[node.depth-1][node.parent_idx].status -= 1
+    return a_tree[0][0].name
+
+
 class Node:
     
     """
@@ -53,10 +69,10 @@ class Tree:
 
         self.add_root_node()
     
-        for depth in range(1,max_depth):
+        for depth in range(1,self.max_depth):
             for parent_idx in range(len(self.tree[depth - 1])): 
                 parent = self.tree[depth - 1][parent_idx] 
-                self.add_node(depth, parent)
+                self.add_nodes(depth, parent)
 
         model_tree = copy.deepcopy(self.tree)
         self.inorder = tree2str_merge(model_tree)
@@ -67,7 +83,7 @@ class Tree:
                     child_num = int(root[1]), var = root[2], full = root)
         self.tree[0].append(node)
     
-    def add_node(self, depth, parent):
+    def add_nodes(self, depth, parent):
         if parent.child_num == 0: 
             return
         for j in range(parent.child_num):
@@ -109,19 +125,17 @@ class Tree:
     def mutate(self, p_mute): 
         global see_tree
         see_tree = copy.deepcopy(self.tree)
-        depth = 1
-        while depth < self.max_depth:
-            idx_this_depth = 0  
+        for depth in range(1,self.max_depth):
             for parent_idx in range(len(self.tree[depth - 1])):
                 parent = self.tree[depth - 1][parent_idx]
                 if parent.child_num == 0:
                     continue
                 for j in range(parent.child_num):  
-                    not_mute = np.random.choice([True, False], p=([1 - p_mute, p_mute]))
+                    mute = np.random.choice([True, False], p=([p_mute, 1-p_mute]))
                     # rule 1: 
-                    if not_mute:
+                    if mute == False:
                         continue
-                    current = self.tree[depth][idx_this_depth]
+                    current = self.tree[depth][self.get_child_idx(parent) + j]
                     temp = current.name
                     num_child = current.child_num  
                     # print('mutate!')
@@ -131,9 +145,9 @@ class Tree:
                             if simple_mode and parent.name in ['d', 'd^2'] and node[0] == 'x': # simple_mode中
                                 break                            
                             node = VARS[np.random.randint(0, len(VARS))] 
-                        new_node = Node(depth=depth, idx=idx_this_depth, parent_idx=parent_idx, name=node[0],
+                        new_node = Node(depth=depth, idx=self.get_child_idx(parent) + j, parent_idx=parent_idx, name=node[0],
                                     child_num=int(node[1]), var=node[2], full=node)
-                        self.tree[depth][idx_this_depth] = new_node 
+                        self.tree[depth][self.get_child_idx(parent) + j] = new_node 
                     else: 
                         if num_child == 1:
                             node = OP1[np.random.randint(0, len(OP1))]
@@ -147,29 +161,12 @@ class Tree:
                         else:
                             raise NotImplementedError("Error occurs!")
 
-                        new_node = Node(depth=depth, idx=idx_this_depth, parent_idx=parent_idx, name=node[0],
+                        new_node = Node(depth=depth, idx=self.get_child_idx(parent) + j, parent_idx=parent_idx, name=node[0],
                                     child_num=int(node[1]), var=node[2], full=node)
-                        self.tree[depth][idx_this_depth] = new_node
-                    idx_this_depth += 1
-            depth += 1
+                        self.tree[depth][self.get_child_idx(parent) + j] = new_node
 
         model_tree = copy.deepcopy(self.tree)
         self.inorder = tree2str_merge(model_tree)
-
-
-def tree2str_merge(a_tree):
-    for i in range(len(a_tree) - 1, 0, -1):
-        for node in a_tree[i]:
-            if node.status == 0:
-                if a_tree[node.depth-1][node.parent_idx].status == 1:
-                    if a_tree[node.depth-1][node.parent_idx].child_num == 2:
-                        a_tree[node.depth-1][node.parent_idx].name = a_tree[node.depth-1][node.parent_idx].name + ' ' + node.name + ')'
-                    else:
-                        a_tree[node.depth-1][node.parent_idx].name = '( ' + a_tree[node.depth-1][node.parent_idx].name + ' ' + node.name + ')'
-                elif a_tree[node.depth-1][node.parent_idx].status > 1:
-                    a_tree[node.depth-1][node.parent_idx].name = '(' + node.name + ' ' + a_tree[node.depth-1][node.parent_idx].name
-                a_tree[node.depth-1][node.parent_idx].status -= 1
-    return a_tree[0][0].name
 
 
 if __name__ == '__main__':
