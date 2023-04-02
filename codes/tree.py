@@ -83,13 +83,13 @@ class Tree:
                     # (and an operator with probability 1-p_var)
                         if np.random.random() <= p_var:
                             node = VARS[np.random.randint(0, len(VARS))]
-                            node = Node(depth=depth, idx=len(self.tree[depth]), parent_idx=parent_idx, name=node[0],
-                                        var=node[2], full=node, child_num=int(node[1]), child_st=None)
+                            node = Node(depth = depth, idx = len(self.tree[depth]), parent_idx = parent_idx, name = node[0],
+                                        var = node[2], full = node, child_num = int(node[1]), child_st = None)
                             self.tree[depth].append(node)
                         else:
                             node = OPS[np.random.randint(0, len(OPS))]
-                            node = Node(depth=depth, idx=len(self.tree[depth]), parent_idx=parent_idx, name=node[0],
-                                        var=node[2], full=node, child_num=int(node[1]), child_st=next_cnt)
+                            node = Node(depth = depth, idx = len(self.tree[depth]), parent_idx = parent_idx, name = node[0],
+                                        var = node[2], full = node, child_num = int(node[1]), child_st = next_cnt)
                             next_cnt += node.child_num
                             self.tree[depth].append(node)
 
@@ -100,7 +100,7 @@ class Tree:
         self.inorder = tree2str_merge(model_tree)
 
 
-    def mutate(self, p_mute): #直接替换原有tree中的某个节点，用同类型节点替换，因此后续位置不需要重新生成（类似替换了一个基因，而不是把后续基因序列重新产生，具有物理含义，也易于实现）
+    def mutate(self, p_mute): 
         global see_tree
         see_tree = copy.deepcopy(self.tree)
         depth = 1
@@ -234,6 +234,6 @@ def tree2str_merge(a_tree):
 if __name__ == '__main__':
     tree = Tree(max_depth = 4, p_var = 0.5)
     print(tree.inorder)
-    tree.mutate(p_mute=1)
+    tree.mutate(p_mute = 1)
     print(tree.inorder)
 
