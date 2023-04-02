@@ -352,7 +352,7 @@ if simple_mode:
     OP2 = np.array([['+', 2, np.add], ['-', 2, np.subtract], ['*', 2, np.multiply], ['/', 2, divide], ['d', 2, Diff], ['d^2', 2, Diff2]])
     # VARS = np.array([['u', 0, u], ['x', 0, x], ['0', 0, zeros], ['ux', 0, ux], ['uxx', 0, uxx], ['u^2', 0, u**2]]) 
     VARS = np.array([['u', 0, u], ['x', 0, x], ['0', 0, zeros], ['ux', 0, ux]])
-    DENOMINATOR = np.array([['x', 0, x]])
+    DENOM = np.array([['x', 0, x]])
 
 # else:
 #     ALL = np.array([['sin', 1, np.sin], ['cos', 1, np.cos], ['log', 1, np.log], ['+', 2, np.add], ['-', 2, np.subtract],
@@ -365,6 +365,6 @@ if simple_mode:
 #     OP2 = np.array(
 #         [['+', 2, np.add], ['-', 2, np.subtract], ['*', 2, np.multiply], ['/', 2, np.divide], ['d', 2, Diff]])
 #     VARS = np.array([['u', 0, u], ['t', 0, t], ['x', 0, x]])
-#     DENOMINATOR = np.array([['t', 0, t], ['x', 0, x]])
+#     DENOM = np.array([['t', 0, t], ['x', 0, x]])
 
 pde_lib, err_lib = [], []

@@ -4,16 +4,16 @@ import numpy as np
 
 class Node:
     """
-        1. depth: 节点深度
-        2. idx: 当前深度的第几个节点
-        3. parent_idx: 父节点是上一层的第几个节点
-        4. name: 节点详情
-        5. child_num: 节点拥有几个孩子节点(单运算还是双运算)
-        6. child_st: 下一层从第几个节点开始是当前的孩子节点
-        7. var: 节点variable/operation
-        8. cache: 保留运算至今的数据
-        9. status: 初始化为child_num，用于记录遍历状态
-        10. full: 完整信息，以OP或VAR形式表示
+        depth: depth of the node
+        idx: index of the node within its depth
+        parent_idx: index of the node's parent within its depth
+        name: string representing the node's name (full[0])
+        child_num: number of children (full[1])
+        child_st: 
+        var: full[2]
+        cache: 
+        status: 
+        full: e.g. ['sin', 1, np.sin], ['*', 2, np.multiply] 
     """
     def __init__(self, depth, idx, parent_idx, name, full, child_num, child_st, var):
         self.depth = depth
@@ -28,22 +28,22 @@ class Node:
         self.full = full
         self.cache = copy.deepcopy(var)
 
-    def __str__(self): # 提供节点详情
+    def __str__(self): 
         return self.name
 
-    def reset_status(self): # 初始化status
+    def reset_status(self):
         self.status = self.child_num
 
 
 class Tree: 
     
     """
-    max_depth: maximum depth of the tree
-    p_var: probability of a node being a variable/operand
-           (as opposed to an operator)
+        max_depth: maximum depth of the tree
+        p_var: probability of a node being a variable/operand
+               (as opposed to an operator)
     """
     
-    def generate_root(self):
+    def add_root_node(self):
         
         root = ROOT[np.random.randint(0, len(ROOT))] # e.g. ['sin', 1, np.sin], ['*', 2, np.multiply] 
         node = Node(depth = 0, idx = 0, parent_idx = None, name = root[0], var = root[2], full = root,
@@ -57,7 +57,7 @@ class Tree:
         self.preorder = None
         self.inorder = None
 
-        self.generate_root()
+        self.add_root_node()
     
         for depth in range(1,max_depth):
             next_cnt = 0 
@@ -66,20 +66,21 @@ class Tree:
                 if parent.child_num == 0: 
                     continue
                 for j in range(parent.child_num):
-                    # rule 1
-                    if parent.name in {'d', 'd^2'} and j == 1: 
-                        node = DENOMINATOR[np.random.randint(0, len(DENOMINATOR))] 
-                        node = Node(depth=depth, idx=len(self.tree[depth]), parent_idx=parent_idx, name=node[0],
-                                    var=node[2], full=node, child_num=int(node[1]), child_st=None)
+                    # rule 1: right child of a derivative operator must be an independent variable
+                    if parent.name in ['d', 'd^2'] and j == 1: 
+                        node = DENOM[np.random.randint(0, len(DENOM))] 
+                        node = Node(depth = depth, idx = len(self.tree[depth]), parent_idx = parent_idx, name = node[0],
+                                    var = node[2], full = node, child_num = int(node[1]), child_st = None)
                         self.tree[depth].append(node)
-                    # rule 2
+                    # rule 2: leaf nodes must be variables/operands (rather than operators)
                     elif depth == max_depth - 1:
                         node = VARS[np.random.randint(0, len(VARS))]
-                        node = Node(depth=depth, idx=len(self.tree[depth]), parent_idx=parent_idx, name=node[0],
-                                    var=node[2], full=node, child_num=int(node[1]), child_st=None)
+                        node = Node(depth = depth, idx = len(self.tree[depth]), parent_idx = parent_idx, name = node[0],
+                                    var = node[2], full = node, child_num = int(node[1]), child_st = None)
                         self.tree[depth].append(node)
                     else:
-                    # rule 3
+                    # rule 3: if rules 1 and 2 do not apply, make the next node a variable/operand with probability p_var
+                    # (and an operator with probability 1-p_var)
                         if np.random.random() <= p_var:
                             node = VARS[np.random.randint(0, len(VARS))]
                             node = Node(depth=depth, idx=len(self.tree[depth]), parent_idx=parent_idx, name=node[0],
@@ -98,9 +99,6 @@ class Tree:
         model_tree = copy.deepcopy(self.tree)
         self.inorder = tree2str_merge(model_tree)
 
-        # print(self.preorder)
-        # print(self.inorder)
-        # print('---------------')
 
     def mutate(self, p_mute): #直接替换原有tree中的某个节点，用同类型节点替换，因此后续位置不需要重新生成（类似替换了一个基因，而不是把后续基因序列重新产生，具有物理含义，也易于实现）
         global see_tree
@@ -126,7 +124,7 @@ class Tree:
                     # print('mutate!')
                     if num_child == 0: # 叶子节点
                         node = VARS[np.random.randint(0, len(VARS))] # rule 2: 叶节点必须是var，不能是op
-                        while node[0] == temp or (parent.name in {'d', 'd^2'} and node[0] not in DENOMINATOR[:, 0]):# rule 3: 如果编译前后结果重复，或者d的节点不在den中（即出现不能求导的对象），则重新抽取
+                        while node[0] == temp or (parent.name in {'d', 'd^2'} and node[0] not in DENOM[:, 0]):# rule 3: 如果编译前后结果重复，或者d的节点不在den中（即出现不能求导的对象），则重新抽取
                             if simple_mode and parent.name in {'d', 'd^2'} and node[0] == 'x': # simple_mode中，遇到对于x的导数，直接停止变异
                                 break                            
                             node = VARS[np.random.randint(0, len(VARS))] # 重新抽取一个vars
@@ -141,7 +139,7 @@ class Tree:
                         elif num_child == 2:
                             node = OP2[np.random.randint(0, len(OP2))]
                             right = self.tree[depth + 1][current.child_st + 1].name
-                            while node[0] == temp or (node[0] in {'d', 'd^2'} and right not in DENOMINATOR[:, 0]):# rule 4: 避免重复，避免生成d以打乱树结构（新d的右子节点不是x）
+                            while node[0] == temp or (node[0] in {'d', 'd^2'} and right not in DENOM[:, 0]):# rule 4: 避免重复，避免生成d以打乱树结构（新d的右子节点不是x）
                                 node = OP2[np.random.randint(0, len(OP2))]
                         else:
                             raise NotImplementedError("Error occurs!")
@@ -159,14 +157,11 @@ class Tree:
         model_tree = copy.deepcopy(self.tree)
         self.inorder = tree2str_merge(model_tree)
 
-        # print(self.preorder)
-        # print(self.inorder)
 
-
-def dfs(ret, a_tree, depth, idx): #辅助前序遍历，产生一个描述这个tree的名称序列（ret）
-    # print(depth, idx)  # 深度优先遍历的顺序
+def dfs(ret, a_tree, depth, idx): 
+    # print(depth, idx) 
     node = a_tree[depth][idx]
-    ret.append(node.name) # 记录当前操作
+    ret.append(node.name) 
     for ix in range(node.child_num):
         if node.child_st is None:
             continue
@@ -237,7 +232,7 @@ def tree2str_merge(a_tree):
 
 
 if __name__ == '__main__':
-    tree = Tree(max_depth=4, p_var=0.5)
+    tree = Tree(max_depth = 4, p_var = 0.5)
     print(tree.inorder)
     tree.mutate(p_mute=1)
     print(tree.inorder)
