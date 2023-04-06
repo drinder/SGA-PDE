@@ -7,6 +7,7 @@ warnings.filterwarnings('ignore')
 
 
 class PDE:
+    
     def __init__(self, depth, max_width, p_var):
         self.depth = depth
         self.p_var = p_var
