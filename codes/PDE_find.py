@@ -28,10 +28,11 @@ def FiniteDiff(u, dx):
     ux = np.zeros(n)
 
     for i in range(1, n - 1):
-        ux[i] = (u[i + 1] - u[i - 1]) / (2 * dx)
+        ux[i] = (u[i + 1] - u[i - 1]) / (2 * dx) # centered difference
 
-    ux[0] = (-3.0 / 2 * u[0] + 2 * u[1] - u[2] / 2) / dx
-    ux[n - 1] = (3.0 / 2 * u[n - 1] - 2 * u[n - 2] + u[n - 3] / 2) / dx
+    ux[0] = (-3.0 / 2 * u[0] + 2 * u[1] - u[2] / 2) / dx # forward difference
+    ux[n - 1] = (3.0 / 2 * u[n - 1] - 2 * u[n - 2] + u[n - 3] / 2) / dx # backward difference
+    
     return ux
 
 
@@ -41,16 +42,17 @@ def FiniteDiff2(u, dx):
     ux = np.zeros(n)
 
     for i in range(1, n - 1):
-        ux[i] = (u[i + 1] - 2 * u[i] + u[i - 1]) / dx ** 2
+        ux[i] = (u[i + 1] - 2 * u[i] + u[i - 1]) / dx ** 2 # centered difference
 
-    ux[0] = (2 * u[0] - 5 * u[1] + 4 * u[2] - u[3]) / dx ** 2
-    ux[n - 1] = (2 * u[n - 1] - 5 * u[n - 2] + 4 * u[n - 3] - u[n - 4]) / dx ** 2
+    ux[0] = (2 * u[0] - 5 * u[1] + 4 * u[2] - u[3]) / dx ** 2 # forward difference
+    ux[n - 1] = (2 * u[n - 1] - 5 * u[n - 2] + 4 * u[n - 3] - u[n - 4]) / dx ** 2 # backward difference
+    
     return ux
 
 
 def Diff(u, dxt, name):
     """
-    Here dx is a scalar, name is a str indicating what it is
+    Here dxt is a scalar, name is a str indicating what it is
     """
 
     n, m = u.shape
@@ -72,7 +74,7 @@ def Diff(u, dxt, name):
 
 def Diff2(u, dxt, name):
     """
-    Here dx is a scalar, name is a str indicating what it is
+    Here dxt is a scalar, name is a str indicating what it is
     """
 
     n, m = u.shape

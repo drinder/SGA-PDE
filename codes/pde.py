@@ -8,62 +8,58 @@ warnings.filterwarnings('ignore')
 
 class PDE:
     
-    def __init__(self, depth, max_width, p_var):
+    def __init__(self, depth, max_num_trees, p_var):
         self.depth = depth
         self.p_var = p_var
-        self.W = np.random.randint(max_width)+1  # 1 -- width
-        self.elements = []
-        for i in range(0, self.W):
-            # 产生W个tree，也就是W个项
-            one_tree = Tree(depth, p_var)
-            # while 'd u t' in tree.preorder:# 没用，挡不住如(sin x + u) d t；不如直接看mse，太小就扔掉
-            #     tree = Tree(depth, p_var)
-            self.elements.append(one_tree)
+        self.num_trees = np.random.randint(max_num_trees+1)
+        self.tree_list = []
+        for i in range(self.num_trees):
+            self.tree_list.append(Tree(depth, p_var))
 
     def mutate(self, p_mute):
-        for i in range(0, self.W):  # 0 -- W-1
-            self.elements[i].mutate(p_mute)
+        for i in range(self.num_trees):  
+            self.tree_list[i].mutate(p_mute)
 
-    def replace(self): # 直接产生一个新的tree，替换pde中的一项
-        # print('replace!')
-        one_tree = Tree(self.depth, self.p_var)
-        ix = np.random.randint(self.W)  # 0 -- W-1
-        if len(self.elements) == 0:
+    def replace(self):
+        if len(self.tree_list) == 0:
             NotImplementedError('replace error')
-        self.elements[ix] = one_tree
+            
+        new_tree = Tree(self.depth, self.p_var)
+        idx = np.random.randint(self.num_trees)  
+        self.tree_list[idx] = new_tree
 
-    def visualize(self): # 写出SGA产生的项的形式，包含产生的所有项，未去除系数小的项。
+    def visualize(self): 
         name = ''
-        for i in range(len(self.elements)):
+        for i in range(self.num_trees):
             if i != 0:
                 name += '+'
-            name += self.elements[i].inorder
+            name += self.tree_list[i].inorder
         return name
 
-    def concise_visualize(self): # 写出所有项的形式，包含固定候选集和SGA，且包含系数。会区分是来自于固定候选集的还是来自于SGA生成的候选集的。如果是来自于SGA生成的候选集，需要用inorder来写出可理解的项。
+    def concise_visualize(self): 
         name = ''
-        elements = copy.deepcopy(self.elements)
-        elements, coefficients = evaluate_mse(elements, True)
+        tree_list = copy.deepcopy(self.tree_list)
+        tree_list, coefficients = evaluate_mse(tree_list, True)
         coefficients = coefficients[:, 0]
-        # print(len(elements), len(coefficients))
+        # print(len(tree_list), len(coefficients))
         for i in range(len(coefficients)):
-            if np.abs(coefficients[i]) < 1e-4: # 忽略过于小的系数
+            if np.abs(coefficients[i]) < 1e-4: 
                 continue
             if i != 0 and name != '':
                 name += ' + '
             name += str(round(np.real(coefficients[i]), 4))
-            if i < num_default: # num_default中为一定包含的候选集
+            if i < num_default: 
                 name += default_names[i]
             else:
-                name += elements[i-num_default].inorder # element是SGA生成的候选集
+                name += tree_list[i-num_default].inorder 
         return name
 
 
-def evaluate_mse(a_pde, is_term=False):
-    if is_term:
-        terms = a_pde
+def evaluate_mse(pde, is_list=False):
+    if is_list:
+        terms = pde
     else:
-        terms = a_pde.elements
+        terms = pde.tree_list
     terms_values = np.zeros((u.shape[0] * u.shape[1], len(terms)))
     delete_ix = []
     for ix, term in enumerate(terms):
@@ -132,12 +128,11 @@ def evaluate_mse(a_pde, is_term=False):
         if is_term:
             terms.pop(ixx - move)
         else:
-            a_pde.elements.pop(ixx-move)
-            a_pde.W -= 1  # 实际宽度减一
+            pde.tree_list.pop(ixx-move)
+            pde.num_trees -= 1 
         terms_values = np.delete(terms_values, ixx-move, axis=1)
-        move += 1  # pop以后index左移
+        move += 1  
 
-    # 检查是否存在inf或者nan，或者terms_values是否被削没了
     if False in np.isfinite(terms_values) or terms_values.shape[1] == 0:
         # pdb.set_trace()
         error = np.inf

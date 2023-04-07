@@ -34,7 +34,6 @@ class Node:
     """
     
     def __init__(self, depth, idx, parent_idx, name, child_num, var, full):
-        
         self.depth = depth
         self.idx = idx
         self.parent_idx = parent_idx
@@ -64,24 +63,25 @@ class Tree:
         
         self.max_depth = max_depth
         self.p_var = p_var
-        self.tree = [[] for i in range(max_depth)]
+        self.node_list = [[] for i in range(max_depth)]
         self.inorder = None
 
         self.add_root_node()
     
         for depth in range(1,self.max_depth):
-            for parent_idx in range(len(self.tree[depth - 1])): 
-                parent = self.tree[depth - 1][parent_idx] 
+            for parent_idx in range(len(self.node_list[depth - 1])):
+                
+                parent = self.node_list[depth - 1][parent_idx] 
                 self.add_nodes(depth, parent)
 
-        model_tree = copy.deepcopy(self.tree)
+        model_tree = copy.deepcopy(self.node_list)
         self.inorder = tree2str_merge(model_tree)
 
     def add_root_node(self):
         root = ROOT[np.random.randint(0, len(ROOT))] 
         node = Node(depth = 0, idx = 0, parent_idx = None, name = root[0], 
                     child_num = int(root[1]), var = root[2], full = root)
-        self.tree[0].append(node)
+        self.node_list[0].append(node)
     
     def add_nodes(self, depth, parent):
         if parent.child_num == 0: 
@@ -90,33 +90,33 @@ class Tree:
             # rule 1: right child of a derivative operator must be an independent variable
             if parent.name in ['d', 'd^2'] and j == 1: 
                 node = DENOM[np.random.randint(0, len(DENOM))] 
-                node = Node(depth = depth, idx = len(self.tree[depth]), parent_idx = parent.idx, name = node[0],
+                node = Node(depth = depth, idx = len(self.node_list[depth]), parent_idx = parent.idx, name = node[0],
                             child_num = int(node[1]), var = node[2], full = node)
-                self.tree[depth].append(node)
+                self.node_list[depth].append(node)
             # rule 2: leaf nodes must be variables/operands (rather than operators)
             elif depth == self.max_depth - 1:
                 node = VARS[np.random.randint(0, len(VARS))]
-                node = Node(depth = depth, idx = len(self.tree[depth]), parent_idx = parent.idx, name = node[0],
+                node = Node(depth = depth, idx = len(self.node_list[depth]), parent_idx = parent.idx, name = node[0],
                             child_num = int(node[1]), var = node[2], full = node)
-                self.tree[depth].append(node)
+                self.node_list[depth].append(node)
             else:
             # rule 3: if rules 1 and 2 do not apply, make the next node a variable/operand with probability p_var
             # (and an operator with probability 1-p_var)
                 if np.random.random() <= self.p_var:
                     node = VARS[np.random.randint(0, len(VARS))]
-                    node = Node(depth = depth, idx = len(self.tree[depth]), parent_idx = parent.idx, name = node[0],
+                    node = Node(depth = depth, idx = len(self.node_list[depth]), parent_idx = parent.idx, name = node[0],
                                 child_num = int(node[1]), var = node[2], full = node)
-                    self.tree[depth].append(node)
+                    self.node_list[depth].append(node)
                 else:
                     node = OPS[np.random.randint(0, len(OPS))]
-                    node = Node(depth = depth, idx = len(self.tree[depth]), parent_idx = parent.idx, name = node[0],
+                    node = Node(depth = depth, idx = len(self.node_list[depth]), parent_idx = parent.idx, name = node[0],
                                 child_num = int(node[1]), var = node[2], full = node)
-                    self.tree[depth].append(node)
+                    self.node_list[depth].append(node)
     
     def get_child_idx(self, node):
         child_idx = 0
         for i in range(node.idx):
-            child_idx = child_idx + self.tree[node.depth][i].child_num
+            child_idx = child_idx + self.node_list[node.depth][i].child_num
         return child_idx
     
     def get_right_child_idx(self, node):
@@ -124,10 +124,10 @@ class Tree:
             
     def mutate(self, p_mute): 
         global see_tree
-        see_tree = copy.deepcopy(self.tree)
+        see_tree = copy.deepcopy(self.node_list)
         for depth in range(1,self.max_depth):
-            for parent_idx in range(len(self.tree[depth - 1])):
-                parent = self.tree[depth - 1][parent_idx]
+            for parent_idx in range(len(self.node_list[depth - 1])):
+                parent = self.node_list[depth - 1][parent_idx]
                 if parent.child_num == 0:
                     continue
                 for j in range(parent.child_num):  
@@ -135,7 +135,7 @@ class Tree:
                     # rule 1: 
                     if mute == False:
                         continue
-                    current = self.tree[depth][self.get_child_idx(parent) + j]
+                    current = self.node_list[depth][self.get_child_idx(parent) + j]
                     temp = current.name
                     num_child = current.child_num  
                     # print('mutate!')
@@ -147,7 +147,7 @@ class Tree:
                             node = VARS[np.random.randint(0, len(VARS))] 
                         new_node = Node(depth=depth, idx=self.get_child_idx(parent) + j, parent_idx=parent_idx, name=node[0],
                                     child_num=int(node[1]), var=node[2], full=node)
-                        self.tree[depth][self.get_child_idx(parent) + j] = new_node 
+                        self.node_list[depth][self.get_child_idx(parent) + j] = new_node 
                     else: 
                         if num_child == 1:
                             node = OP1[np.random.randint(0, len(OP1))]
@@ -155,7 +155,7 @@ class Tree:
                                 node = OP1[np.random.randint(0, len(OP1))]
                         elif num_child == 2:
                             node = OP2[np.random.randint(0, len(OP2))]
-                            right = self.tree[depth + 1][self.get_right_child_idx(current)].name
+                            right = self.node_list[depth + 1][self.get_right_child_idx(current)].name
                             while node[0] == temp or (node[0] in ['d', 'd^2'] and right not in DENOM[:, 0]): # rule 4
                                 node = OP2[np.random.randint(0, len(OP2))]
                         else:
@@ -163,9 +163,9 @@ class Tree:
 
                         new_node = Node(depth=depth, idx=self.get_child_idx(parent) + j, parent_idx=parent_idx, name=node[0],
                                     child_num=int(node[1]), var=node[2], full=node)
-                        self.tree[depth][self.get_child_idx(parent) + j] = new_node
+                        self.node_list[depth][self.get_child_idx(parent) + j] = new_node
 
-        model_tree = copy.deepcopy(self.tree)
+        model_tree = copy.deepcopy(self.node_list)
         self.inorder = tree2str_merge(model_tree)
 
 
